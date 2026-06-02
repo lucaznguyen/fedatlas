@@ -1,0 +1,40 @@
+project_name: "FedAtlas"
+project_subtitle: "Mapping the Global Research-to-Code Ecosystem of Federated Learning"
+start_year: 2016
+end_year: 2026
+max_papers: 0
+crawl_mode: "broad"
+dashboard_language: "en"
+dashboard_theme: "light_academic"
+preferred_font: "Averta"
+font_fallbacks:
+  - Inter
+  - Avenir
+  - Helvetica Neue
+  - Arial
+  - sans-serif
+cache:
+  enabled: true
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  manifest_dir: "data/manifests"
+openalex:
+  per_page: 100
+  use_cursor: true
+  polite_pool: true
+  retry_max: 6
+  retry_backoff_seconds: 2
+github:
+  retry_max: 5
+  retry_backoff_seconds: 3
+  cache_202_statistics: true
+quality:
+  allowed_default_labels:
+    - "A*"
+    - "A"
+    - "Q1"
+  keep_unknown_in_data: true
+  dashboard_default_quality:
+    - "A*"
+    - "A"
+    - "Q1"

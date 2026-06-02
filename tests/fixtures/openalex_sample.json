@@ -1,0 +1,68 @@
+[
+  {
+    "id": "https://openalex.org/W1",
+    "doi": "https://doi.org/10.1000/fedavg",
+    "display_name": "Communication-Efficient Learning of Deep Networks from Decentralized Data",
+    "abstract_inverted_index": {"Federated": [0], "learning": [1], "trains": [2], "models": [3], "without": [4], "centralizing": [5], "data": [6]},
+    "publication_year": 2017,
+    "publication_date": "2017-04-10",
+    "type": "preprint",
+    "language": "en",
+    "cited_by_count": 5000,
+    "referenced_works": ["https://openalex.org/W0"],
+    "authorships": [
+      {
+        "author_position": "first",
+        "author": {"id": "https://openalex.org/A1", "display_name": "H. Brendan McMahan", "orcid": null},
+        "institutions": [{"id": "https://openalex.org/I1", "display_name": "Google", "country_code": "US", "geo": {"country": "United States"}}]
+      },
+      {
+        "author_position": "middle",
+        "author": {"id": "https://openalex.org/A2", "display_name": "Eider Moore", "orcid": null},
+        "institutions": [{"id": "https://openalex.org/I1", "display_name": "Google", "country_code": "US", "geo": {"country": "United States"}}]
+      }
+    ],
+    "primary_location": {
+      "landing_page_url": "https://arxiv.org/abs/1602.05629",
+      "source": {"id": "https://openalex.org/S1", "display_name": "arXiv", "type": "repository", "host_organization_name": "arXiv", "issn_l": null}
+    },
+    "open_access": {"is_oa": true},
+    "topics": [
+      {"id": "https://openalex.org/T1", "display_name": "Federated Learning", "score": 0.99, "subfield": {"display_name": "Artificial Intelligence"}, "field": {"display_name": "Computer Science"}, "domain": {"display_name": "Physical Sciences"}}
+    ],
+    "ids": {"openalex": "https://openalex.org/W1", "doi": "https://doi.org/10.1000/fedavg", "arxiv": "https://arxiv.org/abs/1602.05629"}
+  },
+  {
+    "id": "https://openalex.org/W2",
+    "doi": "10.1000/secureagg",
+    "display_name": "Secure Aggregation for Federated Learning",
+    "abstract_inverted_index": {"Secure": [0], "aggregation": [1], "protects": [2], "privacy": [3]},
+    "publication_year": 2018,
+    "publication_date": "2018-06-01",
+    "type": "conference-paper",
+    "language": "en",
+    "cited_by_count": 1200,
+    "referenced_works": ["https://openalex.org/W1"],
+    "authorships": [
+      {
+        "author_position": "first",
+        "author": {"id": "https://openalex.org/A3", "display_name": "Researcher One", "orcid": null},
+        "institutions": [{"id": "https://openalex.org/I2", "display_name": "University A", "country_code": "GB", "geo": {"country": "United Kingdom"}}]
+      },
+      {
+        "author_position": "last",
+        "author": {"id": "https://openalex.org/A4", "display_name": "Researcher Two", "orcid": null},
+        "institutions": [{"id": "https://openalex.org/I3", "display_name": "University B", "country_code": "US", "geo": {"country": "United States"}}]
+      }
+    ],
+    "primary_location": {
+      "landing_page_url": "https://example.org/secureagg",
+      "source": {"id": "https://openalex.org/S2", "display_name": "International Conference on Machine Learning", "type": "conference", "host_organization_name": "PMLR", "issn_l": null}
+    },
+    "open_access": {"is_oa": true},
+    "topics": [
+      {"id": "https://openalex.org/T2", "display_name": "Privacy Preserving Machine Learning", "score": 0.94, "subfield": {"display_name": "Computer Security"}, "field": {"display_name": "Computer Science"}, "domain": {"display_name": "Physical Sciences"}}
+    ],
+    "ids": {"openalex": "https://openalex.org/W2", "doi": "https://doi.org/10.1000/secureagg"}
+  }
+]

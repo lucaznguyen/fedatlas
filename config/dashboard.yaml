@@ -1,0 +1,17 @@
+title: "FedAtlas"
+subtitle: "Mapping the Global Research-to-Code Ecosystem of Federated Learning"
+default_quality:
+  - "A*"
+  - "A"
+  - "Q1"
+top_n_default: 25
+network_top_n_default: 150
+network_top_n_max: 800
+theme:
+  primary: "#2563eb"
+  navy: "#0f172a"
+  slate: "#334155"
+  border: "#dbe3ef"
+  background: "#f8fafc"
+  surface: "#ffffff"
+  accent: "#38bdf8"

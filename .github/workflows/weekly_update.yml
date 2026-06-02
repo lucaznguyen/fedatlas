@@ -1,0 +1,61 @@
+name: weekly-update
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
+      OPENALEX_MAILTO: ${{ secrets.OPENALEX_MAILTO }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MAX_PAPERS: ${{ vars.MAX_PAPERS || 0 }}
+      START_YEAR: ${{ vars.START_YEAR || 2016 }}
+      END_YEAR: ${{ vars.END_YEAR || 2026 }}
+      RUN_GITHUB_ENRICHMENT: "1"
+      RUN_PWC_MATCHING: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Restore raw cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/raw
+            data/interim
+          key: fedatlas-cache-${{ github.run_id }}
+          restore-keys: fedatlas-cache-
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Weekly update
+        run: python scripts/08_weekly_update.py
+      - name: Run tests
+        run: python -m pytest
+      - name: Upload processed artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedatlas-processed-data
+          path: |
+            data/processed
+            data/manifests
+            data_quality_report.md
+      - name: Commit processed data when policy allows
+        if: ${{ vars.COMMIT_PROCESSED_DATA == '1' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/processed data/manifests data_quality_report.md
+          git diff --cached --quiet || git commit -m "Update FedAtlas processed data"
+          git push
