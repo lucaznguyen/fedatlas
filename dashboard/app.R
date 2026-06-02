@@ -36,7 +36,7 @@ ui <- fluidPage(
       )
     ),
     div(class = "dashboard-grid",
-      aside(class = "filter-rail",
+      tags$aside(class = "filter-rail",
         h2("Filters"),
         sliderInput("year_range", "Year range", min = min(available_years), max = max(available_years), value = range(available_years), sep = ""),
         pickerInput("topic_group", "Topic group", choices = safe_choices(app_data$papers$topic_group), selected = safe_choices(app_data$papers$topic_group), multiple = TRUE, options = list(`actions-box` = TRUE, size = 8)),
@@ -49,7 +49,7 @@ ui <- fluidPage(
         hr(),
         download_button("download_filtered_papers", "Export filtered papers")
       ),
-      main(class = "main-stage",
+      tags$main(class = "main-stage",
         tabsetPanel(id = "main_tabs", type = "tabs",
           tabPanel("Overview", overview_ui("overview")),
           tabPanel("Global Collaboration", collaboration_ui("collaboration")),
