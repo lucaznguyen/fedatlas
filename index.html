@@ -1,0 +1,165 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FedAtlas Preview</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Local preview</p>
+      <h1>FedAtlas</h1>
+      <p>Mapping the Global Research-to-Code Ecosystem of Federated Learning</p>
+    </div>
+    <div class="hero-note">
+      Static preview from <code>data/processed</code>. The full Shiny dashboard is in <code>dashboard/</code>.
+    </div>
+  </header>
+
+  <main>
+    <section id="kpis" class="kpi-grid"></section>
+
+    <section class="grid">
+      <article class="panel wide">
+        <h2>Field Growth</h2>
+        <svg id="timeseries" viewBox="0 0 900 320" role="img"></svg>
+      </article>
+      <article class="panel">
+        <h2>Top Topics</h2>
+        <div id="topics"></div>
+      </article>
+      <article class="panel">
+        <h2>Countries</h2>
+        <div id="countries"></div>
+      </article>
+      <article class="panel wide">
+        <h2>Research-to-Code Gap</h2>
+        <svg id="scatter" viewBox="0 0 900 360" role="img"></svg>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const csv = async (path) => {
+      const res = await fetch(path);
+      if (!res.ok) return [];
+      const text = await res.text();
+      const lines = text.trim().split(/\r?\n/).filter(Boolean);
+      if (!lines.length) return [];
+      const headers = splitCsvLine(lines[0]);
+      return lines.slice(1).map(line => {
+        const values = splitCsvLine(line);
+        return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? ""]));
+      });
+    };
+
+    function splitCsvLine(line) {
+      const out = [];
+      let cur = "", inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; continue; }
+        if (ch === '"') { inQuotes = !inQuotes; continue; }
+        if (ch === "," && !inQuotes) { out.push(cur); cur = ""; continue; }
+        cur += ch;
+      }
+      out.push(cur);
+      return out;
+    }
+
+    const num = (x) => Number(x || 0);
+    const fmt = (x) => num(x).toLocaleString();
+
+    function renderKpis(rows) {
+      const host = document.getElementById("kpis");
+      host.innerHTML = rows.map(r => `
+        <article class="kpi">
+          <span>${r.metric}</span>
+          <strong>${r.metric.includes("Score") ? `${(num(r.value) * 100).toFixed(1)}%` : fmt(r.value)}</strong>
+        </article>
+      `).join("");
+    }
+
+    function renderBars(id, rows, labelKey, valueKey) {
+      const host = document.getElementById(id);
+      if (!rows.length) { host.innerHTML = `<p class="empty">No data yet.</p>`; return; }
+      const max = Math.max(...rows.map(r => num(r[valueKey])), 1);
+      host.innerHTML = rows.map(r => `
+        <div class="bar-row">
+          <span title="${r[labelKey]}">${r[labelKey] || "Unknown"}</span>
+          <div><i style="width:${Math.max(4, num(r[valueKey]) / max * 100)}%"></i></div>
+          <b>${fmt(r[valueKey])}</b>
+        </div>
+      `).join("");
+    }
+
+    function renderTimeseries(rows) {
+      const svg = document.getElementById("timeseries");
+      if (!rows.length) { svg.innerHTML = emptySvg("No time series data"); return; }
+      const w = 900, h = 320, p = 44;
+      const years = rows.map(r => num(r.year));
+      const vals = rows.map(r => num(r.papers));
+      const minX = Math.min(...years), maxX = Math.max(...years);
+      const maxY = Math.max(...vals, 1);
+      const x = year => p + (year - minX) / Math.max(1, maxX - minX) * (w - p * 2);
+      const y = val => h - p - val / maxY * (h - p * 2);
+      const points = rows.map(r => `${x(num(r.year))},${y(num(r.papers))}`).join(" ");
+      svg.innerHTML = `
+        <line x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}" class="axis"/>
+        <line x1="${p}" y1="${p}" x2="${p}" y2="${h-p}" class="axis"/>
+        <polyline points="${points}" class="line"/>
+        ${rows.map(r => `<circle cx="${x(num(r.year))}" cy="${y(num(r.papers))}" r="5" class="dot"><title>${r.year}: ${r.papers} papers</title></circle>`).join("")}
+        <text x="${p}" y="${h-12}" class="tick">${minX}</text>
+        <text x="${w-p-34}" y="${h-12}" class="tick">${maxX}</text>
+        <text x="${p}" y="24" class="tick">${fmt(maxY)} papers</text>
+      `;
+    }
+
+    function renderScatter(rows) {
+      const svg = document.getElementById("scatter");
+      if (!rows.length) { svg.innerHTML = emptySvg("No code gap data"); return; }
+      const w = 900, h = 360, p = 48;
+      const maxX = Math.max(...rows.map(r => num(r.cited_by_count)), 1);
+      const maxY = Math.max(...rows.map(r => num(r.code_score)), 1);
+      const x = val => p + Math.log1p(val) / Math.log1p(maxX) * (w - p * 2);
+      const y = val => h - p - val / maxY * (h - p * 2);
+      svg.innerHTML = `
+        <line x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}" class="axis"/>
+        <line x1="${p}" y1="${p}" x2="${p}" y2="${h-p}" class="axis"/>
+        ${rows.slice(0, 300).map(r => `<circle cx="${x(num(r.cited_by_count))}" cy="${y(num(r.code_score))}" r="${4 + Math.min(10, num(r.total_stars_per_paper || 0) / 100)}" class="scatter"><title>${r.title || "Paper"}\nCitations: ${r.cited_by_count || 0}\nCode score: ${r.code_score || 0}</title></circle>`).join("")}
+        <text x="${p}" y="${h-12}" class="tick">citations, log scale</text>
+        <text x="${p}" y="24" class="tick">code score</text>
+      `;
+    }
+
+    function emptySvg(text) {
+      return `<text x="40" y="60" class="tick">${text}</text>`;
+    }
+
+    async function main() {
+      const [kpis, ts, topicYear, countries, gap] = await Promise.all([
+        csv("data/processed/dashboard_kpis.csv"),
+        csv("data/processed/dashboard_timeseries.csv"),
+        csv("data/processed/dashboard_topic_year.csv"),
+        csv("data/processed/dashboard_country_map.csv"),
+        csv("data/processed/dashboard_code_gap.csv")
+      ]);
+      renderKpis(kpis);
+      renderTimeseries(ts);
+      const topicTotals = Object.values(topicYear.reduce((acc, r) => {
+        const key = r.topic_group || "Unknown";
+        acc[key] ??= { topic_group: key, papers: 0 };
+        acc[key].papers += num(r.papers);
+        return acc;
+      }, {})).sort((a, b) => b.papers - a.papers).slice(0, 12);
+      renderBars("topics", topicTotals, "topic_group", "papers");
+      renderBars("countries", countries.sort((a, b) => num(b.paper_count) - num(a.paper_count)).slice(0, 12), "country_name", "paper_count");
+      renderScatter(gap);
+    }
+    main();
+  </script>
+</body>
+</html>
+

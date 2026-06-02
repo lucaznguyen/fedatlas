@@ -1,0 +1,135 @@
+year,topic_group,papers
+2016,Communication Efficiency,1
+2016,Core FL Algorithms,4
+2016,Data Heterogeneity / Non-IID,10
+2016,Fairness & Ethics,11
+2016,Foundation Models / LLMs,5
+2016,Graph / GNN FL,1
+2016,Healthcare & Biomedical,24
+2016,Other,42
+2016,Privacy,2
+2016,Security & Robustness,2
+2016,Systems & Edge/IoT,40
+2016,Wireless & Networking,36
+2017,Core FL Algorithms,2
+2017,Data Heterogeneity / Non-IID,12
+2017,Fairness & Ethics,7
+2017,Foundation Models / LLMs,4
+2017,Graph / GNN FL,2
+2017,Healthcare & Biomedical,20
+2017,Other,30
+2017,Privacy,2
+2017,Systems & Edge/IoT,44
+2017,Vertical / Split / Transfer FL,1
+2017,Wireless & Networking,48
+2018,Data Heterogeneity / Non-IID,20
+2018,Fairness & Ethics,8
+2018,Foundation Models / LLMs,2
+2018,Healthcare & Biomedical,16
+2018,Other,11
+2018,Privacy,4
+2018,Security & Robustness,3
+2018,Systems & Edge/IoT,36
+2018,Vertical / Split / Transfer FL,2
+2018,Wireless & Networking,54
+2019,Communication Efficiency,1
+2019,Core FL Algorithms,1
+2019,Data Heterogeneity / Non-IID,30
+2019,Fairness & Ethics,12
+2019,Graph / GNN FL,8
+2019,Healthcare & Biomedical,14
+2019,Other,2
+2019,Personalization,1
+2019,Privacy,5
+2019,Security & Robustness,5
+2019,Systems & Edge/IoT,42
+2019,Vertical / Split / Transfer FL,13
+2019,Wireless & Networking,61
+2020,Communication Efficiency,5
+2020,Core FL Algorithms,1
+2020,Data Heterogeneity / Non-IID,45
+2020,Fairness & Ethics,21
+2020,Foundation Models / LLMs,5
+2020,Graph / GNN FL,12
+2020,Healthcare & Biomedical,18
+2020,Other,3
+2020,Privacy,11
+2020,Security & Robustness,11
+2020,Systems & Edge/IoT,33
+2020,Vertical / Split / Transfer FL,28
+2020,Wireless & Networking,92
+2021,Communication Efficiency,3
+2021,Core FL Algorithms,2
+2021,Data Heterogeneity / Non-IID,44
+2021,Fairness & Ethics,24
+2021,Foundation Models / LLMs,10
+2021,Graph / GNN FL,18
+2021,Healthcare & Biomedical,31
+2021,Privacy,4
+2021,Security & Robustness,16
+2021,Systems & Edge/IoT,41
+2021,Vertical / Split / Transfer FL,34
+2021,Wireless & Networking,79
+2022,Communication Efficiency,4
+2022,Data Heterogeneity / Non-IID,55
+2022,Fairness & Ethics,24
+2022,Foundation Models / LLMs,14
+2022,Graph / GNN FL,18
+2022,Healthcare & Biomedical,18
+2022,Personalization,1
+2022,Privacy,9
+2022,Security & Robustness,17
+2022,Systems & Edge/IoT,50
+2022,Vertical / Split / Transfer FL,39
+2022,Wireless & Networking,84
+2023,Communication Efficiency,3
+2023,Core FL Algorithms,2
+2023,Data Heterogeneity / Non-IID,67
+2023,Fairness & Ethics,32
+2023,Foundation Models / LLMs,20
+2023,Graph / GNN FL,17
+2023,Healthcare & Biomedical,26
+2023,Privacy,12
+2023,Security & Robustness,18
+2023,Systems & Edge/IoT,36
+2023,Vertical / Split / Transfer FL,43
+2023,Wireless & Networking,69
+2024,Communication Efficiency,4
+2024,Core FL Algorithms,1
+2024,Data Heterogeneity / Non-IID,52
+2024,Fairness & Ethics,31
+2024,Foundation Models / LLMs,16
+2024,Graph / GNN FL,21
+2024,Healthcare & Biomedical,18
+2024,Personalization,1
+2024,Privacy,13
+2024,Security & Robustness,37
+2024,Systems & Edge/IoT,38
+2024,Vertical / Split / Transfer FL,43
+2024,Wireless & Networking,76
+2025,Communication Efficiency,4
+2025,Core FL Algorithms,1
+2025,Data Heterogeneity / Non-IID,63
+2025,Fairness & Ethics,34
+2025,Foundation Models / LLMs,26
+2025,Graph / GNN FL,16
+2025,Healthcare & Biomedical,28
+2025,Other,2
+2025,Personalization,2
+2025,Privacy,19
+2025,Security & Robustness,18
+2025,Systems & Edge/IoT,35
+2025,Vertical / Split / Transfer FL,48
+2025,Wireless & Networking,73
+2026,Communication Efficiency,2
+2026,Core FL Algorithms,2
+2026,Data Heterogeneity / Non-IID,66
+2026,Fairness & Ethics,29
+2026,Foundation Models / LLMs,27
+2026,Graph / GNN FL,36
+2026,Healthcare & Biomedical,19
+2026,Privacy,14
+2026,Security & Robustness,15
+2026,Systems & Edge/IoT,27
+2026,Vertical / Split / Transfer FL,32
+2026,Wireless & Networking,53
