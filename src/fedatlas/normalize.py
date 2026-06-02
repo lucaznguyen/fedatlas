@@ -6,6 +6,7 @@ from typing import Any
 
 import pandas as pd
 
+from .country_codes import country_alpha3, country_display_name
 from .schemas import SCHEMAS, ensure_columns
 from .topic_classifier import classify_topic
 from .utils import extract_arxiv_id, normalize_doi, normalize_title, reconstruct_abstract
@@ -24,9 +25,9 @@ def _source_from_location(location: dict[str, Any] | None) -> dict[str, Any]:
 def _country_name(country_code: str | None, institution: dict[str, Any] | None = None) -> str | None:
     if institution:
         geo = institution.get("geo") or {}
-        if geo.get("country"):
+        if geo.get("country") and geo.get("country") != country_code:
             return geo.get("country")
-    return country_code
+    return country_display_name(country_code) or country_code
 
 
 def deduplicate_works(records: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
@@ -167,6 +168,7 @@ def normalize_openalex(records: list[dict[str, Any]], venue_quality_path: str | 
                     "institution_id": inst.get("id"),
                     "institution_name": inst.get("display_name"),
                     "country_code": inst.get("country_code"),
+                    "country_iso3": country_alpha3(inst.get("country_code")),
                     "country_name": _country_name(inst.get("country_code"), inst),
                 })
                 paper_institution_rows.append({
@@ -175,8 +177,8 @@ def normalize_openalex(records: list[dict[str, Any]], venue_quality_path: str | 
                     "institution_name": inst.get("display_name"),
                 })
                 if inst.get("country_code"):
-                    country_rows.append({"country_code": inst.get("country_code"), "country_name": _country_name(inst.get("country_code"), inst)})
-                    paper_country_rows.append({"work_id": work_id, "country_code": inst.get("country_code"), "country_name": _country_name(inst.get("country_code"), inst)})
+                    country_rows.append({"country_code": inst.get("country_code"), "country_iso3": country_alpha3(inst.get("country_code")), "country_name": _country_name(inst.get("country_code"), inst)})
+                    paper_country_rows.append({"work_id": work_id, "country_code": inst.get("country_code"), "country_iso3": country_alpha3(inst.get("country_code")), "country_name": _country_name(inst.get("country_code"), inst)})
         topic_candidates = openalex_topics or ([rec.get("primary_topic")] if rec.get("primary_topic") else [])
         for topic in topic_candidates:
             if not topic:

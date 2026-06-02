@@ -8,6 +8,7 @@ import _bootstrap  # noqa: F401
 import pandas as pd
 
 from fedatlas.config import load_settings
+from fedatlas.country_codes import country_alpha3, country_display_name
 from fedatlas.data_quality import generate_report
 from fedatlas.github_client import enrich_github_repos
 from fedatlas.graph_builder import build_graph_tables
@@ -119,12 +120,18 @@ def export_dashboard_data(settings, tables: dict[str, pd.DataFrame]) -> None:
             citations=("cited_by_count", "sum"),
             github_linked_papers=("has_code", "sum"),
         ).reset_index()
+        country_map["country_iso3"] = country_map["country_code"].map(country_alpha3)
+        country_map["country_name"] = country_map.apply(
+            lambda row: country_display_name(row["country_code"]) or row["country_name"],
+            axis=1,
+        )
+        country_map = country_map.dropna(subset=["country_iso3"])
         country_map["research_to_code_score"] = country_map["github_linked_papers"] / country_map["paper_count"].replace(0, pd.NA)
         if not nodes.empty and {"node_type", "node_id", "bridge_score", "degree"}.issubset(nodes.columns):
             country_nodes = nodes[nodes["node_type"] == "Country"][["node_id", "bridge_score", "degree"]]
             country_map = country_map.merge(country_nodes, left_on="country_code", right_on="node_id", how="left").drop(columns=["node_id"], errors="ignore")
     else:
-        country_map = pd.DataFrame(columns=["country_code", "country_name", "paper_count", "citations", "github_linked_papers", "research_to_code_score", "bridge_score", "degree"])
+        country_map = pd.DataFrame(columns=["country_code", "country_iso3", "country_name", "paper_count", "citations", "github_linked_papers", "research_to_code_score", "bridge_score", "degree"])
     write_table(country_map, out_dir / "dashboard_country_map.csv")
     write_table(tables.get("country_collaboration", pd.DataFrame()), out_dir / "dashboard_country_edges.csv")
 

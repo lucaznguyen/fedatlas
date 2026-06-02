@@ -12,11 +12,12 @@ collaboration_server <- function(id, filtered_papers) {
     output$world_map <- renderPlotly({
       cm <- app_data$country_map
       if (!nrow(cm)) return(plotly_empty())
+      if (!"country_iso3" %in% names(cm)) return(plotly_empty())
       plot_geo(cm) |>
         add_trace(
           type = "choropleth",
-          locations = ~country_name,
-          locationmode = "country names",
+          locations = ~country_iso3,
+          locationmode = "ISO-3",
           z = ~paper_count,
           text = ~paste0(country_name, "<br>Papers: ", paper_count, "<br>Citations: ", citations),
           colorscale = "Blues",
