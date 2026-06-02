@@ -123,6 +123,26 @@ Launch it with:
 make dashboard
 ```
 
+## Deploy to shinyapps.io
+
+Create a shinyapps.io account, then open Account > Tokens and copy the `rsconnect::setAccountInfo(...)` values into environment variables:
+
+```bash
+set SHINYAPPS_ACCOUNT=your-account-name
+set SHINYAPPS_TOKEN=your-token
+set SHINYAPPS_SECRET=your-secret
+set SHINYAPPS_APP_NAME=fedatlas
+```
+
+Build the processed data first, then deploy:
+
+```bash
+make build
+make deploy-shinyapps
+```
+
+The deploy script creates a temporary self-contained bundle with `dashboard/` plus the required `data/processed` outputs. It does not commit processed data or credentials to Git.
+
 ## Limitations
 
 - GitHub metadata enrichment is rate-limited without `GITHUB_TOKEN`.

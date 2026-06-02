@@ -1,4 +1,4 @@
-.PHONY: setup smoke crawl update build dashboard test quality-report clean-cache
+.PHONY: setup smoke crawl update build dashboard deploy-shinyapps test quality-report clean-cache
 
 PYTHON ?= python
 PIP ?= $(PYTHON) -m pip
@@ -24,6 +24,9 @@ build:
 
 dashboard:
 	Rscript -e "shiny::runApp('dashboard', host='0.0.0.0', port=3838)"
+
+deploy-shinyapps:
+	Rscript scripts/09_deploy_shinyapps.R
 
 test:
 	$(PYTHON) -m pytest
