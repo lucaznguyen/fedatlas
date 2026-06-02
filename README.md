@@ -143,6 +143,14 @@ make deploy-shinyapps
 
 The deploy script creates a temporary self-contained bundle with `dashboard/` plus the required `data/processed` outputs. It does not commit processed data or credentials to Git.
 
+You can also deploy from GitHub Actions without exposing credentials locally:
+
+1. In GitHub, open Settings > Secrets and variables > Actions.
+2. Add repository secrets: `SHINYAPPS_ACCOUNT`, `SHINYAPPS_TOKEN`, `SHINYAPPS_SECRET`.
+3. Optional: add `OPENALEX_MAILTO`, `OPENALEX_API_KEY`, and `FEDATLAS_GITHUB_TOKEN` secrets for better API limits.
+4. Optional: set repository variables `SHINYAPPS_APP_NAME=fedatlas` and `SHINYAPPS_MAX_PAPERS=5000`.
+5. Open Actions > deploy-shinyapps > Run workflow.
+
 ## Limitations
 
 - GitHub metadata enrichment is rate-limited without `GITHUB_TOKEN`.
