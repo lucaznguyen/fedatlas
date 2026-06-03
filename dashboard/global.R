@@ -51,6 +51,8 @@ app_data$venues <- read_parquet_safe("venues.parquet")
 app_data$repos <- read_parquet_safe("repos.parquet")
 app_data$contributors <- read_parquet_safe("contributors.parquet")
 app_data$paper_code_links <- read_parquet_safe("paper_code_links.parquet")
+app_data$paper_countries <- read_parquet_safe("paper_countries.parquet")
+app_data$repo_contributors <- read_parquet_safe("repo_contributors.parquet")
 
 has_demo_mode <- Sys.getenv("USE_DEMO_DATA", "0") == "1"
 available_years <- sort(unique(na.omit(app_data$timeseries$year)))
@@ -59,6 +61,60 @@ if (!length(available_years)) available_years <- 2016:2026
 safe_choices <- function(x) {
   vals <- sort(unique(na.omit(as.character(x))))
   vals[nzchar(vals)]
+}
+
+as_number <- function(x, default = 0) {
+  out <- suppressWarnings(as.numeric(x))
+  out[is.na(out)] <- default
+  out
+}
+
+as_flag <- function(x) {
+  if (is.logical(x)) return(replace_na(x, FALSE))
+  tolower(as.character(x)) %in% c("true", "t", "1", "yes", "y")
+}
+
+empty_dt <- function(message) {
+  datatable(tibble(message = message), options = list(dom = "t", pageLength = 1), rownames = FALSE)
+}
+
+topic_heatmap_plot <- function(papers, max_topics = 18) {
+  if (!nrow(papers) || !all(c("publication_year", "topic_group") %in% names(papers))) return(plotly_empty())
+  heat <- papers |>
+    mutate(
+      publication_year = as.integer(as_number(.data$publication_year, NA_real_)),
+      topic_group = coalesce(as.character(.data$topic_group), "Unassigned")
+    ) |>
+    filter(!is.na(.data$publication_year), nzchar(.data$topic_group)) |>
+    count(.data$publication_year, .data$topic_group, name = "papers")
+  if (!nrow(heat)) return(plotly_empty())
+
+  top_topics <- heat |>
+    group_by(.data$topic_group) |>
+    summarise(total = sum(.data$papers, na.rm = TRUE), .groups = "drop") |>
+    arrange(desc(.data$total), .data$topic_group) |>
+    slice_head(n = max_topics)
+  years <- seq(min(heat$publication_year, na.rm = TRUE), max(heat$publication_year, na.rm = TRUE))
+  topic_order <- rev(top_topics$topic_group)
+
+  heat_wide <- heat |>
+    filter(.data$topic_group %in% top_topics$topic_group) |>
+    mutate(topic_group = factor(.data$topic_group, levels = topic_order)) |>
+    complete(publication_year = years, topic_group = factor(topic_order, levels = topic_order), fill = list(papers = 0)) |>
+    arrange(.data$topic_group, .data$publication_year) |>
+    pivot_wider(names_from = .data$publication_year, values_from = .data$papers, values_fill = 0)
+
+  z <- as.matrix(heat_wide[, as.character(years), drop = FALSE])
+  storage.mode(z) <- "numeric"
+  plot_ly(
+    x = years,
+    y = as.character(heat_wide$topic_group),
+    z = z,
+    type = "heatmap",
+    colorscale = "Blues",
+    hovertemplate = "Year: %{x}<br>Topic: %{y}<br>Papers: %{z}<extra></extra>"
+  ) |>
+    layout(xaxis = list(title = ""), yaxis = list(title = ""))
 }
 
 metric_value <- function(metric) {

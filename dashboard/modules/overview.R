@@ -49,10 +49,7 @@ overview_server <- function(id, filtered_papers) {
 
     output$topic_heatmap <- renderPlotly({
       papers <- filtered_papers()
-      if (!nrow(papers)) return(plotly_empty())
-      heat <- papers |> count(publication_year, topic_group)
-      plot_ly(heat, x = ~publication_year, y = ~topic_group, z = ~n, type = "heatmap", colorscale = "Blues") |>
-        layout(xaxis = list(title = ""), yaxis = list(title = ""))
+      topic_heatmap_plot(papers, max_topics = 14)
     })
 
     output$top_countries <- renderPlotly({

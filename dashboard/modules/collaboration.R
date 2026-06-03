@@ -1,7 +1,7 @@
 collaboration_ui <- function(id) {
   ns <- NS(id)
   div(class = "section-grid",
-    card("Global Collaboration Map", withSpinner(plotlyOutput(ns("world_map"), height = "460px")), caption("Bubble size reflects paper count. Country names come from OpenAlex institution affiliations."), class = "span-8"),
+    card("Global Collaboration Map", withSpinner(plotlyOutput(ns("world_map"), height = "460px")), caption("Country shading encodes paper count; darker countries contribute more papers. Country names come from OpenAlex institution affiliations."), class = "span-8"),
     card("Bridge Countries", withSpinner(DTOutput(ns("country_rank"))), class = "span-4"),
     card("Country-Pair Collaboration", withSpinner(DTOutput(ns("country_pairs"))), class = "span-12")
   )

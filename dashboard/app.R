@@ -86,8 +86,8 @@ server <- function(input, output, session) {
   collaboration_server("collaboration", filtered_papers)
   topics_server("topics", filtered_papers)
   network_server("network", filtered_papers)
-  code_gap_server("codegap", filtered_papers)
-  repos_server("repos", filtered_papers)
+  code_gap_server("codegap", filtered_papers, top_n = reactive(input$top_n))
+  repos_server("repos", filtered_papers, min_stars = reactive(input$min_stars))
   venues_server("venues", filtered_papers)
   methods_server("methods", filtered_papers)
 }
