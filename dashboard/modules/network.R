@@ -18,8 +18,7 @@ network_ui <- function(id) {
       card("Research-to-Code Network", withSpinner(visNetworkOutput(ns("network_plot"), height = "620px")), class = "span-8"),
       card("Selected / Top Node Details", withSpinner(DTOutput(ns("node_detail"))), class = "span-4"),
       card("Country Collaboration Map", withSpinner(plotlyOutput(ns("country_map"), height = "560px")), caption("Curved lines show top country-pair collaborations; thicker, darker arcs mean stronger collaboration."), class = "span-8"),
-      card("Top Country Collaboration Pairs", withSpinner(DTOutput(ns("country_pairs"))), class = "span-4"),
-      card("Research-Code Community Summary", withSpinner(DTOutput(ns("community_summary"))), class = "span-12")
+      card("Top Country Collaboration Pairs", withSpinner(DTOutput(ns("country_pairs"))), class = "span-4")
     )
   )
 }
@@ -154,12 +153,6 @@ network_server <- function(id, filtered_papers) {
       if (!nrow(net$nodes)) return(empty_dt("No connected nodes match the active network filters."))
       net$nodes |> arrange(desc(network_score)) |> select(node_type, display_label, year, topic, venue_quality, network_degree, weighted_degree, pagerank, bridge_score, url) |> slice_head(n = 25) |>
         datatable(options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE)
-    })
-
-    output$community_summary <- renderDT({
-      net <- visible_network()
-      if (!nrow(net$nodes)) return(empty_dt("No connected nodes match the active network filters."))
-      net$nodes |> count(community, node_type, sort = TRUE) |> datatable(options = list(pageLength = 12, scrollX = TRUE), rownames = FALSE)
     })
 
     country_arc_points <- function(lon1, lat1, lon2, lat2, n = 36, curve = 0.16) {
