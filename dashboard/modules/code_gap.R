@@ -129,9 +129,21 @@ code_gap_server <- function(id, filtered_papers, top_n = reactive(25)) {
       if (!nrow(sankey)) {
         return(sankeyNetwork(Links = data.frame(source = integer(), target = integer(), value = numeric()), Nodes = data.frame(name = character()), Source = "source", Target = "target", Value = "value", NodeID = "name"))
       }
-      labels <- unique(c(sankey$source, sankey$target))
-      nodes <- data.frame(name = labels)
-      links <- sankey |> mutate(source = match(source, labels) - 1, target = match(target, labels) - 1) |> select(source, target, value)
+      labels <- unique(c(
+        paste0("Topic: ", top_topics),
+        paste0("Country: ", top_countries),
+        paste0("Repo: ", top_repos),
+        sankey$source,
+        sankey$target
+      ))
+      nodes <- data.frame(name = labels, stringsAsFactors = FALSE)
+      links <- sankey |>
+        transmute(
+          source = as.integer(match(.data$source, labels) - 1L),
+          target = as.integer(match(.data$target, labels) - 1L),
+          value = as.numeric(.data$value)
+        ) |>
+        as.data.frame()
       sankeyNetwork(Links = links, Nodes = nodes, Source = "source", Target = "target", Value = "value", NodeID = "name", fontSize = 11, nodeWidth = 22, sinksRight = FALSE)
     })
 
