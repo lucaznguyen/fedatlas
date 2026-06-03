@@ -1,9 +1,7 @@
 overview_ui <- function(id) {
   ns <- NS(id)
   tagList(
-    div(class = "kpi-grid",
-      uiOutput(ns("kpi_cards"))
-    ),
+    uiOutput(ns("kpi_cards")),
     br(),
     div(class = "section-grid",
       card("Field Growth", withSpinner(plotlyOutput(ns("growth_plot"), height = "330px")), caption("Annual paper volume, citations, and GitHub-linked papers after the active filters."), class = "span-8"),
@@ -20,7 +18,7 @@ overview_server <- function(id, filtered_papers) {
   moduleServer(id, function(input, output, session) {
     output$kpi_cards <- renderUI({
       metrics <- c("Papers", "Authors", "Institutions", "Countries", "Venues", "GitHub Repos", "Total Citations", "Total GitHub Stars", "Research-to-Code Score")
-      tagList(lapply(metrics, function(m) div(class = "kpi-card", span(m), strong(metric_value(m)))))
+      div(class = "kpi-grid", lapply(metrics, function(m) div(class = "kpi-card", span(m), strong(metric_value(m)))))
     })
 
     output$growth_plot <- renderPlotly({
