@@ -60,7 +60,32 @@ repos_server <- function(id, filtered_papers, min_stars = reactive(0)) {
       rc <- app_data$repo_contributors
       contributors <- app_data$contributors
       if (!nrow(rc)) {
-        return(empty_dt("Contributor metadata is not available yet. Re-run the GitHub enrichment step with GITHUB_TOKEN to populate this leaderboard."))
+        repos <- app_data$repos
+        if (!nrow(repos) || !"repo_owner" %in% names(repos)) {
+          return(empty_dt("Contributor metadata is not available yet. Re-run the GitHub enrichment step with GITHUB_TOKEN to populate this leaderboard."))
+        }
+        owner_leaderboard <- repos |>
+          mutate(
+            repo_owner = coalesce(as.character(.data$repo_owner), "Unknown"),
+            stargazers_count = as_number(.data$stargazers_count, 0),
+            forks_count = as_number(.data$forks_count, 0)
+          ) |>
+          filter(nzchar(.data$repo_owner), .data$repo_owner != "Unknown") |>
+          group_by(.data$repo_owner) |>
+          summarise(
+            repositories = n_distinct(.data$repo_full_name),
+            stars = sum(.data$stargazers_count, na.rm = TRUE),
+            forks = sum(.data$forks_count, na.rm = TRUE),
+            profile_url = paste0("https://github.com/", first(.data$repo_owner)),
+            source = "Repository owner fallback",
+            .groups = "drop"
+          ) |>
+          arrange(desc(.data$stars), desc(.data$repositories), .data$repo_owner) |>
+          slice_head(n = 100)
+        if (!nrow(owner_leaderboard)) {
+          return(empty_dt("Contributor metadata is not available yet. Re-run the GitHub enrichment step with GITHUB_TOKEN to populate this leaderboard."))
+        }
+        return(datatable(owner_leaderboard, options = list(pageLength = 15, scrollX = TRUE), rownames = FALSE))
       }
       leaderboard <- rc |>
         mutate(
