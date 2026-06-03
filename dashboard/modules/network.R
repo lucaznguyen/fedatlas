@@ -10,14 +10,14 @@ network_ui <- function(id) {
         column(3, pickerInput(ns("node_types"), "Research-code node types", choices = node_choices, selected = c("Paper", "Topic", "GitHubRepo"), multiple = TRUE, options = list(`actions-box` = TRUE))),
         column(3, pickerInput(ns("edge_types"), "Research-code edge types", choices = relation_choices, selected = default_relations, multiple = TRUE, options = list(`actions-box` = TRUE))),
         column(3, sliderInput(ns("network_top_n"), "Network nodes", min = 25, max = 800, value = 150, step = 25)),
-        column(3, sliderInput(ns("country_top_n"), "Country matrix size", min = 8, max = 35, value = 18, step = 1))
+        column(3, sliderInput(ns("country_top_n"), "Country map size", min = 8, max = 35, value = 18, step = 1))
       )
     ),
     br(),
     div(class = "section-grid",
       card("Research-to-Code Network", withSpinner(visNetworkOutput(ns("network_plot"), height = "620px")), class = "span-8"),
       card("Selected / Top Node Details", withSpinner(DTOutput(ns("node_detail"))), class = "span-4"),
-      card("Country Collaboration Matrix", withSpinner(plotlyOutput(ns("country_matrix"), height = "520px")), caption("Cell color encodes summed country-pair collaboration count; darker blue means stronger collaboration."), class = "span-8"),
+      card("Country Collaboration Map", withSpinner(plotlyOutput(ns("country_map"), height = "560px")), caption("Curved lines show top country-pair collaborations; thicker, darker arcs mean stronger collaboration."), class = "span-8"),
       card("Top Country Collaboration Pairs", withSpinner(DTOutput(ns("country_pairs"))), class = "span-4"),
       card("Research-Code Community Summary", withSpinner(DTOutput(ns("community_summary"))), class = "span-12")
     )
@@ -162,10 +162,31 @@ network_server <- function(id, filtered_papers) {
       net$nodes |> count(community, node_type, sort = TRUE) |> datatable(options = list(pageLength = 12, scrollX = TRUE), rownames = FALSE)
     })
 
+    country_arc_points <- function(lon1, lat1, lon2, lat2, n = 36, curve = 0.16) {
+      dx <- lon2 - lon1
+      if (dx > 180) lon2 <- lon2 - 360
+      if (dx < -180) lon2 <- lon2 + 360
+      dx <- lon2 - lon1
+      dy <- lat2 - lat1
+      distance <- sqrt(dx^2 + dy^2)
+      if (!is.finite(distance) || distance == 0) return(tibble(lon = numeric(), lat = numeric()))
+      normal_lon <- -dy / distance
+      normal_lat <- dx / distance
+      bend <- min(20, max(3, distance * curve))
+      mid_lon <- (lon1 + lon2) / 2 + normal_lon * bend
+      mid_lat <- (lat1 + lat2) / 2 + normal_lat * bend
+      t <- seq(0, 1, length.out = n)
+      lon <- (1 - t)^2 * lon1 + 2 * (1 - t) * t * mid_lon + t^2 * lon2
+      lat <- (1 - t)^2 * lat1 + 2 * (1 - t) * t * mid_lat + t^2 * lat2
+      lon <- ifelse(lon > 180, lon - 360, ifelse(lon < -180, lon + 360, lon))
+      tibble(lon = lon, lat = lat)
+    }
+
     country_collaboration <- reactive({
       edges <- app_data$country_edges
       countries <- app_data$country_map
-      if (!nrow(edges) || !nrow(countries)) return(list(matrix = NULL, pairs = tibble()))
+      centroids <- app_data$country_centroids
+      if (!nrow(edges) || !nrow(countries) || !nrow(centroids)) return(list(nodes = tibble(), pairs = tibble(), arcs = tibble()))
 
       papers <- filtered_papers()
       if (nrow(papers) && "publication_year" %in% names(papers)) {
@@ -179,7 +200,16 @@ network_server <- function(id, filtered_papers) {
       top_n <- suppressWarnings(as.integer(input$country_top_n))
       if (is.na(top_n) || top_n < 8) top_n <- 18
       country_lookup <- countries |>
-        transmute(country_code = as.character(.data$country_code), country_name = coalesce(as.character(.data$country_name), as.character(.data$country_code))) |>
+        transmute(
+          country_code = as.character(.data$country_code),
+          country_name = coalesce(as.character(.data$country_name), as.character(.data$country_code)),
+          country_iso3 = coalesce(as.character(.data$country_iso3), as.character(.data$country_code)),
+          paper_count = as_number(.data$paper_count, 0)
+        ) |>
+        distinct()
+      centroid_lookup <- centroids |>
+        transmute(country_code = as.character(.data$country_code), lat = as_number(.data$lat, NA_real_), lon = as_number(.data$lon, NA_real_)) |>
+        filter(!is.na(.data$lat), !is.na(.data$lon)) |>
         distinct()
 
       pairs <- edges |>
@@ -191,7 +221,7 @@ network_server <- function(id, filtered_papers) {
         filter(nzchar(.data$source), nzchar(.data$target), .data$source != .data$target, .data$weight > 0) |>
         group_by(.data$source, .data$target) |>
         summarise(weight = sum(.data$weight, na.rm = TRUE), .groups = "drop")
-      if (!nrow(pairs)) return(list(matrix = NULL, pairs = tibble()))
+      if (!nrow(pairs)) return(list(nodes = tibble(), pairs = tibble(), arcs = tibble()))
 
       strength <- bind_rows(
         pairs |> transmute(country_code = .data$source, weight = .data$weight),
@@ -202,58 +232,115 @@ network_server <- function(id, filtered_papers) {
         arrange(desc(.data$total_collaborations)) |>
         slice_head(n = top_n)
       country_codes <- strength$country_code
-      if (!length(country_codes)) return(list(matrix = NULL, pairs = tibble()))
+      if (!length(country_codes)) return(list(nodes = tibble(), pairs = tibble(), arcs = tibble()))
+
+      nodes <- country_lookup |>
+        filter(.data$country_code %in% country_codes) |>
+        left_join(strength, by = "country_code") |>
+        left_join(centroid_lookup, by = "country_code") |>
+        filter(!is.na(.data$lat), !is.na(.data$lon)) |>
+        mutate(
+          total_collaborations = as_number(.data$total_collaborations, 0),
+          marker_size = pmin(28, pmax(7, 6 + sqrt(.data$total_collaborations)))
+        ) |>
+        arrange(desc(.data$total_collaborations))
+      country_codes <- nodes$country_code
+      if (!length(country_codes)) return(list(nodes = tibble(), pairs = tibble(), arcs = tibble()))
 
       pairs <- pairs |>
         filter(.data$source %in% country_codes, .data$target %in% country_codes) |>
         left_join(country_lookup |> rename(source = country_code, source_name = country_name), by = "source") |>
         left_join(country_lookup |> rename(target = country_code, target_name = country_name), by = "target") |>
+        left_join(centroid_lookup |> rename(source = country_code, source_lat = lat, source_lon = lon), by = "source") |>
+        left_join(centroid_lookup |> rename(target = country_code, target_lat = lat, target_lon = lon), by = "target") |>
         mutate(
           source_name = coalesce(.data$source_name, .data$source),
-          target_name = coalesce(.data$target_name, .data$target)
+          target_name = coalesce(.data$target_name, .data$target),
+          weight_scaled = sqrt(.data$weight / max(.data$weight, na.rm = TRUE)),
+          line_width = 0.7 + 5.2 * .data$weight_scaled,
+          line_alpha = 0.14 + 0.48 * .data$weight_scaled
         ) |>
-        arrange(desc(.data$weight), .data$source_name, .data$target_name)
-      if (!nrow(pairs)) return(list(matrix = NULL, pairs = tibble()))
+        filter(!is.na(.data$source_lat), !is.na(.data$source_lon), !is.na(.data$target_lat), !is.na(.data$target_lon)) |>
+        arrange(desc(.data$weight), .data$source_name, .data$target_name) |>
+        slice_head(n = min(90, max(28, top_n * 4)))
+      if (!nrow(pairs)) return(list(nodes = nodes, pairs = tibble(), arcs = tibble()))
 
-      labels <- country_lookup |>
-        filter(.data$country_code %in% country_codes) |>
-        right_join(tibble(country_code = country_codes), by = "country_code") |>
-        mutate(country_name = coalesce(.data$country_name, .data$country_code)) |>
-        pull(country_name)
-      z <- matrix(0, nrow = length(country_codes), ncol = length(country_codes))
-      for (idx in seq_len(nrow(pairs))) {
-        i <- match(pairs$source[idx], country_codes)
-        j <- match(pairs$target[idx], country_codes)
-        if (!is.na(i) && !is.na(j)) {
-          z[i, j] <- z[i, j] + pairs$weight[idx]
-          z[j, i] <- z[j, i] + pairs$weight[idx]
-        }
-      }
-      diag(z) <- NA_real_
-      hover_base <- outer(labels, labels, paste, sep = " - ")
-      hover <- matrix(paste0(hover_base, "<br>Collaborations: ", z), nrow = nrow(z), ncol = ncol(z))
-      list(matrix = list(labels = labels, z = z, hover = hover), pairs = pairs)
+      arcs <- bind_rows(lapply(seq_len(nrow(pairs)), function(idx) {
+        arc <- country_arc_points(pairs$source_lon[idx], pairs$source_lat[idx], pairs$target_lon[idx], pairs$target_lat[idx])
+        if (!nrow(arc)) return(tibble())
+        arc |>
+          mutate(
+            pair_id = idx,
+            source_name = pairs$source_name[idx],
+            target_name = pairs$target_name[idx],
+            weight = pairs$weight[idx],
+            line_width = pairs$line_width[idx],
+            line_alpha = pairs$line_alpha[idx],
+            hover = paste0(pairs$source_name[idx], " - ", pairs$target_name[idx], "<br>Collaborations: ", pairs$weight[idx])
+          )
+      }))
+      list(nodes = nodes, pairs = pairs, arcs = arcs)
     })
 
-    output$country_matrix <- renderPlotly({
+    output$country_map <- renderPlotly({
       collab <- country_collaboration()
-      if (is.null(collab$matrix) || !length(collab$matrix$labels)) return(plotly_empty())
-      row_order <- rev(seq_along(collab$matrix$labels))
-      plot_ly(
-        x = collab$matrix$labels,
-        y = rev(collab$matrix$labels),
-        z = collab$matrix$z[row_order, , drop = FALSE],
-        text = collab$matrix$hover[row_order, , drop = FALSE],
-        hoverinfo = "text",
-        type = "heatmap",
-        colorscale = paper_count_colorscale,
-        reversescale = FALSE,
-        colorbar = list(title = "Collaborations")
-      ) |>
+      if (!nrow(collab$nodes)) return(plotly_empty())
+
+      p <- plot_geo() |>
         layout(
-          xaxis = list(title = "", tickangle = 45),
-          yaxis = list(title = ""),
-          margin = list(l = 120, b = 110)
+          geo = list(
+            showframe = FALSE,
+            showcoastlines = TRUE,
+            coastlinecolor = "#94a3b8",
+            showland = TRUE,
+            landcolor = "#f8fafc",
+            showcountries = TRUE,
+            countrycolor = "#cbd5e1",
+            projection = list(type = "natural earth")
+          ),
+          showlegend = FALSE,
+          margin = list(l = 0, r = 0, t = 0, b = 0)
+        )
+
+      if (nrow(collab$arcs)) {
+        for (pair_id in unique(collab$arcs$pair_id)) {
+          arc <- collab$arcs |> filter(.data$pair_id == !!pair_id)
+          opacity <- max(0.12, min(0.68, arc$line_alpha[1]))
+          p <- p |>
+            add_trace(
+              data = arc,
+              type = "scattergeo",
+              mode = "lines",
+              lon = ~lon,
+              lat = ~lat,
+              text = ~hover,
+              hoverinfo = "text",
+              line = list(width = arc$line_width[1], color = paste0("rgba(37,99,235,", round(opacity, 3), ")"))
+            )
+        }
+      }
+
+      p |>
+        add_trace(
+          data = collab$nodes,
+          type = "scattergeo",
+          mode = "markers+text",
+          lon = ~lon,
+          lat = ~lat,
+          text = ~country_code,
+          textposition = "top center",
+          hoverinfo = "text",
+          hovertext = ~paste0(country_name, "<br>Papers: ", paper_count, "<br>Country collaborations: ", total_collaborations),
+          marker = list(
+            size = collab$nodes$marker_size,
+            color = collab$nodes$total_collaborations,
+            colorscale = paper_count_colorscale,
+            reversescale = FALSE,
+            opacity = 0.92,
+            colorbar = list(title = "Collaborations"),
+            line = list(color = "#ffffff", width = 1)
+          ),
+          textfont = list(size = 10, color = "#0f172a")
         )
     })
 

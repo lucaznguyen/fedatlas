@@ -69,6 +69,14 @@ processed_files <- list.files(processed_dir, full.names = TRUE)
 keep <- Reduce(`|`, lapply(needed_patterns, function(pattern) grepl(pattern, basename(processed_files))))
 file.copy(processed_files[keep], bundle_processed, overwrite = TRUE)
 
+centroid_file <- file.path(processed_dir, "dashboard_country_centroids.csv")
+if (!file.exists(centroid_file)) {
+  centroid_file <- file.path(root, "config", "country_centroids.csv")
+}
+if (file.exists(centroid_file)) {
+  file.copy(centroid_file, file.path(bundle_processed, "dashboard_country_centroids.csv"), overwrite = TRUE)
+}
+
 if (has_env_credentials) {
   rsconnect::setAccountInfo(name = account, token = token, secret = secret)
 }
