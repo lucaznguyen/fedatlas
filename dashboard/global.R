@@ -63,6 +63,14 @@ safe_choices <- function(x) {
   vals[nzchar(vals)]
 }
 
+paper_count_colorscale <- list(
+  c(0.00, "#eff6ff"),
+  c(0.25, "#bfdbfe"),
+  c(0.50, "#60a5fa"),
+  c(0.75, "#2563eb"),
+  c(1.00, "#0b1f75")
+)
+
 as_number <- function(x, default = 0) {
   out <- suppressWarnings(as.numeric(x))
   out[is.na(out)] <- default
@@ -111,7 +119,9 @@ topic_heatmap_plot <- function(papers, max_topics = 18) {
     y = as.character(heat_wide$topic_group),
     z = z,
     type = "heatmap",
-    colorscale = "Blues",
+    colorscale = paper_count_colorscale,
+    reversescale = FALSE,
+    colorbar = list(title = "Papers"),
     hovertemplate = "Year: %{x}<br>Topic: %{y}<br>Papers: %{z}<extra></extra>"
   ) |>
     layout(xaxis = list(title = ""), yaxis = list(title = ""))

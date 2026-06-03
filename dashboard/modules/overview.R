@@ -43,7 +43,7 @@ overview_server <- function(id, filtered_papers) {
       papers <- filtered_papers()
       if (!nrow(papers) || !"topic_group" %in% names(papers)) return(plotly_empty())
       top <- papers |> count(topic_group, sort = TRUE) |> slice_head(n = 10)
-      plot_ly(top, x = ~n, y = ~reorder(topic_group, n), type = "bar", orientation = "h", marker = list(color = "#2563eb")) |>
+      plot_ly(top, x = ~n, y = ~reorder(topic_group, n), type = "bar", orientation = "h", marker = list(color = ~n, colorscale = paper_count_colorscale, reversescale = FALSE, showscale = FALSE)) |>
         layout(xaxis = list(title = "Papers"), yaxis = list(title = ""))
     })
 
@@ -56,7 +56,7 @@ overview_server <- function(id, filtered_papers) {
       pc <- app_data$country_map
       if (!nrow(pc)) return(plotly_empty())
       top <- pc |> arrange(desc(paper_count)) |> slice_head(n = 10)
-      plot_ly(top, x = ~paper_count, y = ~reorder(country_name, paper_count), type = "bar", orientation = "h", marker = list(color = "#38bdf8")) |>
+      plot_ly(top, x = ~paper_count, y = ~reorder(country_name, paper_count), type = "bar", orientation = "h", marker = list(color = ~paper_count, colorscale = paper_count_colorscale, reversescale = FALSE, showscale = FALSE)) |>
         layout(xaxis = list(title = "Papers"), yaxis = list(title = ""))
     })
 
@@ -64,7 +64,7 @@ overview_server <- function(id, filtered_papers) {
       papers <- filtered_papers()
       if (!nrow(papers) || !"venue_name" %in% names(papers)) return(plotly_empty())
       top <- papers |> filter(!is.na(venue_name)) |> count(venue_name, sort = TRUE) |> slice_head(n = 10)
-      plot_ly(top, x = ~n, y = ~reorder(venue_name, n), type = "bar", orientation = "h", marker = list(color = "#64748b")) |>
+      plot_ly(top, x = ~n, y = ~reorder(venue_name, n), type = "bar", orientation = "h", marker = list(color = ~n, colorscale = paper_count_colorscale, reversescale = FALSE, showscale = FALSE)) |>
         layout(xaxis = list(title = "Papers"), yaxis = list(title = ""))
     })
 

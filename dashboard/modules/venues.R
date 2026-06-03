@@ -14,7 +14,7 @@ venues_server <- function(id, filtered_papers) {
       papers <- filtered_papers()
       if (!nrow(papers)) return(plotly_empty())
       q <- papers |> count(quality_label, sort = TRUE)
-      plot_ly(q, x = ~quality_label, y = ~n, type = "bar", marker = list(color = "#2563eb")) |> layout(xaxis = list(title = ""), yaxis = list(title = "Papers"))
+      plot_ly(q, x = ~quality_label, y = ~n, type = "bar", marker = list(color = ~n, colorscale = paper_count_colorscale, reversescale = FALSE, showscale = FALSE)) |> layout(xaxis = list(title = ""), yaxis = list(title = "Papers"))
     })
 
     output$citation_quality <- renderPlotly({

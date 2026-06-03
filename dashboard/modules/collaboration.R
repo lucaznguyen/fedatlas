@@ -20,7 +20,9 @@ collaboration_server <- function(id, filtered_papers) {
           locationmode = "ISO-3",
           z = ~paper_count,
           text = ~paste0(country_name, "<br>Papers: ", paper_count, "<br>Citations: ", citations),
-          colorscale = "Blues",
+          colorscale = paper_count_colorscale,
+          reversescale = FALSE,
+          colorbar = list(title = "Paper count"),
           marker = list(line = list(color = "#ffffff", width = 0.4))
         ) |>
         layout(geo = list(showframe = FALSE, showcoastlines = TRUE, projection = list(type = "natural earth")))
