@@ -70,8 +70,8 @@ body {
   min-height: 120px;
 }
 .panel-card h3 { font-size: 17px; margin: 0 0 12px; }
-.kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-.kpi-card { padding: 15px; border: 1px solid var(--line); border-radius: 8px; background: #ffffff; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: stretch; }
+.kpi-card { min-height: 96px; padding: 15px; border: 1px solid var(--line); border-radius: 8px; background: #ffffff; }
 .kpi-card span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
 .kpi-card strong { display: block; margin-top: 6px; font-size: 26px; }
 .chart-caption { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
@@ -90,6 +90,10 @@ body {
 @media (max-width: 760px) {
   .app-shell { padding: 12px; }
   .hero-copy h1 { font-size: 42px; }
-  .hero-meta, .kpi-grid { grid-template-columns: 1fr; }
+  .hero-meta { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .span-8, .span-6, .span-4, .span-3 { grid-column: span 12; }
+}
+@media (max-width: 420px) {
+  .kpi-grid { grid-template-columns: 1fr; }
 }
