@@ -23,11 +23,19 @@ token <- Sys.getenv("SHINYAPPS_TOKEN")
 secret <- Sys.getenv("SHINYAPPS_SECRET")
 app_name <- Sys.getenv("SHINYAPPS_APP_NAME", "fedatlas")
 
-if (!nzchar(account) || !nzchar(token) || !nzchar(secret)) {
+saved_accounts <- rsconnect::accounts()
+if (!nzchar(account) && nrow(saved_accounts) == 1) {
+  account <- saved_accounts$name[1]
+}
+
+has_env_credentials <- nzchar(account) && nzchar(token) && nzchar(secret)
+has_saved_credentials <- nzchar(account) && nrow(saved_accounts) && account %in% saved_accounts$name
+
+if (!has_env_credentials && !has_saved_credentials) {
   stop(
     paste(
       "Missing shinyapps.io credentials.",
-      "Set SHINYAPPS_ACCOUNT, SHINYAPPS_TOKEN, and SHINYAPPS_SECRET first.",
+      "Either run rsconnect::setAccountInfo(...) once or set SHINYAPPS_ACCOUNT, SHINYAPPS_TOKEN, and SHINYAPPS_SECRET.",
       "Get token/secret from shinyapps.io > Account > Tokens.",
       sep = "\n"
     ),
@@ -61,9 +69,12 @@ processed_files <- list.files(processed_dir, full.names = TRUE)
 keep <- Reduce(`|`, lapply(needed_patterns, function(pattern) grepl(pattern, basename(processed_files))))
 file.copy(processed_files[keep], bundle_processed, overwrite = TRUE)
 
-rsconnect::setAccountInfo(name = account, token = token, secret = secret)
+if (has_env_credentials) {
+  rsconnect::setAccountInfo(name = account, token = token, secret = secret)
+}
 rsconnect::deployApp(
   appDir = bundle_dir,
+  account = account,
   appName = app_name,
   appTitle = "FedAtlas",
   forceUpdate = TRUE
