@@ -49,7 +49,12 @@ code_gap_server <- function(id, filtered_papers, top_n = reactive(25)) {
         sizes = c(6, 34),
         text = ~paste0(title, "<br>Venue: ", venue_name, "<br>Year: ", publication_year, "<br>Citations: ", cited_by_count, "<br>Code score: ", round(code_score, 2)),
         type = "scatter", mode = "markers", marker = list(opacity = 0.72, line = list(width = 0.5, color = "rgba(15,23,42,0.35)"))) |>
-        layout(xaxis = list(title = "Citation count", type = "log"), yaxis = list(title = "Code score", rangemode = "tozero"), legend = list(orientation = "h"))
+        layout(
+          xaxis = list(title = list(text = "Citation count", standoff = 22), type = "log"),
+          yaxis = list(title = "Code score", rangemode = "tozero"),
+          legend = list(orientation = "h", x = 0, y = -0.32, xanchor = "left", yanchor = "top"),
+          margin = list(b = 170)
+        )
     })
 
     output$rtc_topic <- renderPlotly({
