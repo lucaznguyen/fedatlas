@@ -11,15 +11,20 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     env:
       OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
       OPENALEX_MAILTO: ${{ secrets.OPENALEX_MAILTO }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      MAX_PAPERS: ${{ vars.MAX_PAPERS || 0 }}
+      GITHUB_TOKEN: ${{ secrets.FEDATLAS_GITHUB_TOKEN || github.token }}
+      MAX_PAPERS: ${{ vars.WEEKLY_MAX_PAPERS || vars.MAX_PAPERS || 12000 }}
       START_YEAR: ${{ vars.START_YEAR || 2016 }}
       END_YEAR: ${{ vars.END_YEAR || 2026 }}
       RUN_GITHUB_ENRICHMENT: "1"
       RUN_PWC_MATCHING: "1"
+      SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
+      SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
+      SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
+      SHINYAPPS_APP_NAME: ${{ vars.SHINYAPPS_APP_NAME || 'fedatlas' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,6 +32,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
       - name: Restore raw cache
         uses: actions/cache@v4
         with:
@@ -43,6 +51,13 @@ jobs:
         run: python scripts/08_weekly_update.py
       - name: Run tests
         run: python -m pytest
+      - name: Install R deployment dependencies
+        if: ${{ env.SHINYAPPS_ACCOUNT != '' && env.SHINYAPPS_TOKEN != '' && env.SHINYAPPS_SECRET != '' }}
+        run: |
+          Rscript -e "install.packages(c('rsconnect','shiny','bslib','shinyWidgets','shinycssloaders','plotly','DT','visNetwork','networkD3','dplyr','tidyr','readr','arrow','stringr','lubridate','htmltools','scales','jsonlite'), repos = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest')"
+      - name: Deploy to shinyapps.io
+        if: ${{ env.SHINYAPPS_ACCOUNT != '' && env.SHINYAPPS_TOKEN != '' && env.SHINYAPPS_SECRET != '' }}
+        run: Rscript scripts/09_deploy_shinyapps.R
       - name: Upload processed artifact
         uses: actions/upload-artifact@v4
         with:

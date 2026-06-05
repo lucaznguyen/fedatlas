@@ -41,7 +41,7 @@ def country_collaboration_edges(paper_countries: pd.DataFrame, papers: pd.DataFr
     return pd.DataFrame(rows).groupby(["source", "target", "year"], dropna=False)["weight"].sum().reset_index()
 
 
-def author_collaboration_edges(paper_authors: pd.DataFrame, papers: pd.DataFrame | None = None) -> pd.DataFrame:
+def author_collaboration_edges(paper_authors: pd.DataFrame, papers: pd.DataFrame | None = None, max_authors_per_paper: int = 50) -> pd.DataFrame:
     if paper_authors.empty:
         return pd.DataFrame(columns=["source", "target", "weight", "year"])
     pa = paper_authors.dropna(subset=["work_id", "author_id"]).drop_duplicates(["work_id", "author_id"])
@@ -50,6 +50,8 @@ def author_collaboration_edges(paper_authors: pd.DataFrame, papers: pd.DataFrame
     rows = []
     for _, group in pa.groupby("work_id"):
         authors = sorted(group["author_id"].dropna().astype(str).unique())
+        if len(authors) > max_authors_per_paper:
+            authors = authors[:max_authors_per_paper]
         year = group["publication_year"].dropna().iloc[0] if "publication_year" in group and group["publication_year"].notna().any() else None
         for a, b in combinations(authors, 2):
             rows.append({"source": a, "target": b, "weight": 1, "year": year})
@@ -86,6 +88,8 @@ def build_graph_tables(tables: dict[str, pd.DataFrame]) -> dict[str, pd.DataFram
     repos = tables.get("repos", pd.DataFrame())
     contributors = tables.get("contributors", pd.DataFrame())
     repo_contributors = tables.get("repo_contributors", pd.DataFrame())
+    paper_year_by_work = papers.set_index("work_id")["publication_year"].to_dict() if not papers.empty and {"work_id", "publication_year"}.issubset(papers.columns) else {}
+    paper_node_ids = set(papers.get("work_id", pd.Series(dtype="object")).dropna().astype(str))
 
     node_rows: list[dict[str, Any]] = []
     edge_rows: list[dict[str, Any]] = []
@@ -109,13 +113,21 @@ def build_graph_tables(tables: dict[str, pd.DataFrame]) -> dict[str, pd.DataFram
         node_rows.append({"node_id": c.get("contributor_id"), "node_type": "Contributor", "label": c.get("login"), "display_label": c.get("login"), "year": None, "country": None, "topic": None, "venue_quality": None, "size_metric": 1, "color_group": "Contributor", "community": None, "url": c.get("html_url"), "extra_json": "{}"})
 
     for _, row in tables.get("paper_authors", pd.DataFrame()).iterrows():
-        year = papers.set_index("work_id").get("publication_year", pd.Series()).get(row.get("work_id")) if not papers.empty else None
+        year = paper_year_by_work.get(row.get("work_id"))
         _add_edge(edge_rows, row.get("author_id"), row.get("work_id"), "writes", True, year, "Author", "Paper")
     for _, row in tables.get("paper_institutions", pd.DataFrame()).iterrows():
         _add_edge(edge_rows, row.get("institution_id"), row.get("work_id"), "affiliated_with_paper", True, None, "Institution", "Paper")
     for _, row in tables.get("paper_topics", pd.DataFrame()).iterrows():
         _add_edge(edge_rows, row.get("work_id"), row.get("topic_id") or row.get("topic_group"), "has_topic", True, None, "Paper", "Topic")
-    for _, row in tables.get("paper_references", pd.DataFrame()).iterrows():
+    references = tables.get("paper_references", pd.DataFrame())
+    if not references.empty:
+        refs = references.dropna(subset=["work_id", "referenced_work_id"]).copy()
+        refs["_referenced_work_id"] = refs["referenced_work_id"].astype(str)
+        internal_refs = refs[refs["_referenced_work_id"].isin(paper_node_ids)]
+        external_cap = max(0, 50000 - len(internal_refs))
+        external_refs = refs[~refs["_referenced_work_id"].isin(paper_node_ids)].head(external_cap)
+        references = pd.concat([internal_refs, external_refs], ignore_index=True).drop(columns=["_referenced_work_id"], errors="ignore")
+    for _, row in references.iterrows():
         _add_edge(edge_rows, row.get("work_id"), row.get("referenced_work_id"), "cites", True, None, "Paper", "Paper")
     if not code_links.empty:
         for _, row in code_links.iterrows():
@@ -179,11 +191,14 @@ def add_network_metrics(nodes: pd.DataFrame, edges: pd.DataFrame) -> pd.DataFram
         pagerank = nx.pagerank(graph, weight="weight")
     else:
         pagerank = {n: 0.0 for n in graph.nodes}
-    try:
-        communities = nx.algorithms.community.greedy_modularity_communities(graph, weight="weight")
-        community_map = {node: idx for idx, comm in enumerate(communities) for node in comm}
-    except Exception:
-        community_map = {n: 0 for n in graph.nodes}
+    if graph.number_of_nodes() <= 5000 and graph.number_of_edges() <= 30000:
+        try:
+            communities = nx.algorithms.community.greedy_modularity_communities(graph, weight="weight")
+            community_map = {node: idx for idx, comm in enumerate(communities) for node in comm}
+        except Exception:
+            community_map = {n: 0 for n in graph.nodes}
+    else:
+        community_map = {n: -1 for n in graph.nodes}
     out = nodes.copy()
     out["degree"] = out["node_id"].astype(str).map(degree).fillna(0)
     out["weighted_degree"] = out["node_id"].astype(str).map(weighted_degree).fillna(0)

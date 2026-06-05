@@ -45,14 +45,26 @@ def match_papers_with_code(papers: pd.DataFrame, pwc_papers: pd.DataFrame, pwc_l
     pwc_by_doi = {r["doi_norm"]: r for _, r in pwc.dropna(subset=["doi_norm"]).iterrows() if r["doi_norm"]}
     pwc_by_arxiv = {r["arxiv_id"]: r for _, r in pwc.dropna(subset=["arxiv_id"]).iterrows() if r["arxiv_id"]}
     pwc_by_title = {r["title_norm"]: r for _, r in pwc.iterrows() if r.get("title_norm")}
-
+    paper_rows: list[tuple[object, pd.Series, str, list[str]]] = []
+    needed_tokens: set[str] = set()
     for _, paper in papers.iterrows():
+        title_norm = normalize_title(paper.get("title"))
+        tokens = [t for t in title_norm.split() if len(t) > 5]
+        paper_rows.append((paper.get("work_id"), paper, title_norm, tokens))
+        needed_tokens.update(tokens)
+
+    token_index: dict[str, list[int]] = {token: [] for token in needed_tokens}
+    if needed_tokens:
+        for idx, title_norm in pwc["title_norm"].dropna().items():
+            for token in set(str(title_norm).split()).intersection(needed_tokens):
+                token_index[token].append(idx)
+
+    for _, paper, title_norm, tokens in paper_rows:
         match = None
         method = None
         confidence = 0.0
         doi = normalize_doi(paper.get("doi"))
         arxiv = paper.get("arxiv_id") or extract_arxiv_id(paper.get("doi_url"), paper.get("title"))
-        title_norm = normalize_title(paper.get("title"))
         if doi and doi in pwc_by_doi:
             match = pwc_by_doi[doi]
             method = "doi_exact"
@@ -67,9 +79,10 @@ def match_papers_with_code(papers: pd.DataFrame, pwc_papers: pd.DataFrame, pwc_l
             confidence = 0.98
         else:
             # Narrow fuzzy matching to candidates sharing at least one uncommon token.
-            tokens = [t for t in title_norm.split() if len(t) > 5]
-            if tokens:
-                subset = pwc[pwc["title_norm"].str.contains(tokens[0], na=False, regex=False)].head(200)
+            indexed_tokens = [token for token in tokens if token_index.get(token)]
+            if indexed_tokens:
+                rarest_token = min(indexed_tokens, key=lambda token: len(token_index[token]))
+                subset = pwc.loc[token_index[rarest_token][:200]]
                 best_row = None
                 best_score = 0.0
                 for _, candidate in subset.iterrows():

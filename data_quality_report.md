@@ -1,18 +1,18 @@
 # FedAtlas Data Quality Report
 
-- crawl timestamp: 2026-06-02T10:54:59+00:00
+- crawl timestamp: 2026-06-05T09:35:59+00:00
 - configured year range: 2016-2026
-- paper count: 3012
-- author count: 11455
-- institution count: 2618
-- country count: 102
-- venue count: 709
-- topic count: 756
-- repo count: 444
-- Papers With Code match count: 665
-- venue quality coverage: {'Unknown': 3012}
-- missing DOI rate: 0.04714475431606906
-- missing abstract rate: 0.16600265604249667
+- paper count: 10699
+- author count: 45191
+- institution count: 7840
+- country count: 170
+- venue count: 2355
+- topic count: 2111
+- repo count: 845
+- Papers With Code match count: 1114
+- venue quality coverage: {'Unknown': 10699}
+- missing DOI rate: 0.020843069445742594
+- missing abstract rate: 0.1404804187307225
 
 ## Warnings
 

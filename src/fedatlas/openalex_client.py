@@ -67,8 +67,15 @@ class OpenAlexClient:
 
     def request_page(self, query: str, year: int, cursor: str = "*") -> dict[str, Any]:
         params = self._params(query, year, cursor)
+        last_error: Exception | None = None
         for attempt in range(1, self.retry_max + 1):
-            response = self.session.get(OPENALEX_WORKS_URL, params=params, timeout=60)
+            try:
+                response = self.session.get(OPENALEX_WORKS_URL, params=params, timeout=60)
+            except requests.RequestException as exc:
+                last_error = exc
+                LOGGER.warning("OpenAlex request error on attempt %s for query=%r year=%s: %s", attempt, query, year, exc)
+                sleep_with_backoff(self.backoff, attempt)
+                continue
             if response.status_code == 200:
                 return response.json()
             if response.status_code in {429, 500, 502, 503, 504}:
@@ -76,7 +83,8 @@ class OpenAlexClient:
                 sleep_with_backoff(self.backoff, attempt)
                 continue
             response.raise_for_status()
-        raise RuntimeError(f"OpenAlex failed after {self.retry_max} retries for query={query!r}, year={year}")
+        detail = f": {last_error}" if last_error else ""
+        raise RuntimeError(f"OpenAlex failed after {self.retry_max} retries for query={query!r}, year={year}{detail}")
 
     def crawl_query_year(self, query: str, year: int, remaining: int | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         records: list[dict[str, Any]] = []
@@ -93,7 +101,13 @@ class OpenAlexClient:
         }
         while cursor:
             page += 1
-            payload = self.request_page(query, year, cursor)
+            try:
+                payload = self.request_page(query, year, cursor)
+            except Exception as exc:
+                LOGGER.warning("Stopping OpenAlex batch query=%r year=%s page=%s after error: %s", query, year, page, exc)
+                manifest["errors"].append({"page": page, "message": str(exc)})
+                manifest["exhausted"] = False
+                break
             result_records = payload.get("results", [])
             page_hash = hashlib.sha1(f"{query}-{year}-{page}".encode("utf-8")).hexdigest()[:12]
             write_json(raw_dir / f"{page_hash}.json", payload)
