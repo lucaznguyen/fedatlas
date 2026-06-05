@@ -156,6 +156,9 @@ filter_dataset <- function(papers, input) {
   if (!is.null(input$venue_quality) && length(input$venue_quality) && "quality_label" %in% names(out)) {
     out <- out |> filter(.data$quality_label %in% input$venue_quality)
   }
+  if (!is.null(input$venue_type) && length(input$venue_type) && "venue_type" %in% names(out)) {
+    out <- out |> filter(.data$venue_type %in% input$venue_type)
+  }
   if (!is.null(input$min_citations) && "cited_by_count" %in% names(out)) {
     out <- out |> filter(coalesce(.data$cited_by_count, 0) >= input$min_citations)
   }

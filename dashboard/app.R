@@ -18,8 +18,11 @@ theme <- bs_theme(
 
 venue_quality_choices <- safe_choices(app_data$papers$quality_label)
 if (!length(venue_quality_choices)) venue_quality_choices <- c("Unknown")
+venue_quality_has_signal <- length(setdiff(venue_quality_choices, "Unknown")) > 0
 venue_quality_selected <- intersect(c("A*", "A", "Q1"), venue_quality_choices)
 if (!length(venue_quality_selected)) venue_quality_selected <- venue_quality_choices
+venue_type_choices <- safe_choices(app_data$papers$venue_type)
+if (!length(venue_type_choices)) venue_type_choices <- c("Unknown")
 
 ui <- fluidPage(
   theme = theme,
@@ -45,7 +48,11 @@ ui <- fluidPage(
         h2("Filters"),
         sliderInput("year_range", "Year range", min = min(available_years), max = max(available_years), value = range(available_years), sep = ""),
         pickerInput("topic_group", "Topic group", choices = safe_choices(app_data$papers$topic_group), selected = safe_choices(app_data$papers$topic_group), multiple = TRUE, options = list(`actions-box` = TRUE, size = 8)),
-        pickerInput("venue_quality", "Venue quality", choices = venue_quality_choices, selected = venue_quality_selected, multiple = TRUE, options = list(`actions-box` = TRUE)),
+        if (venue_quality_has_signal) {
+          pickerInput("venue_quality", "Venue quality", choices = venue_quality_choices, selected = venue_quality_selected, multiple = TRUE, options = list(`actions-box` = TRUE))
+        } else {
+          pickerInput("venue_type", "Venue type", choices = venue_type_choices, selected = venue_type_choices, multiple = TRUE, options = list(`actions-box` = TRUE))
+        },
         radioGroupButtons("has_code", "Code", choices = c("All", "Has GitHub", "No GitHub"), selected = "All", justified = TRUE, size = "sm"),
         numericInput("min_citations", "Minimum citations", value = 0, min = 0, step = 1),
         numericInput("min_stars", "Minimum GitHub stars", value = 0, min = 0, step = 1),
@@ -62,7 +69,7 @@ ui <- fluidPage(
           tabPanel("Network Explorer", network_ui("network")),
           tabPanel("Research-to-Code Gap", code_gap_ui("codegap")),
           tabPanel("Repositories & Contributors", repos_ui("repos")),
-          tabPanel("Venues & Quality", venues_ui("venues")),
+          tabPanel("Venues & Sources", venues_ui("venues")),
           tabPanel("Data & Methods", methods_ui("methods"))
         )
       )

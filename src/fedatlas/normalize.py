@@ -22,6 +22,32 @@ def _source_from_location(location: dict[str, Any] | None) -> dict[str, Any]:
     return source or {}
 
 
+def _source_priority(source: dict[str, Any]) -> int:
+    source_type = str(source.get("type") or "").lower()
+    priority = {
+        "conference": 0,
+        "journal": 1,
+        "book series": 2,
+        "ebook platform": 3,
+        "repository": 4,
+    }
+    return priority.get(source_type, 5)
+
+
+def _best_source(record: dict[str, Any]) -> dict[str, Any]:
+    candidates: list[tuple[int, int, dict[str, Any]]] = []
+    primary_source = _source_from_location(record.get("primary_location"))
+    if primary_source.get("display_name") or primary_source.get("id"):
+        candidates.append((_source_priority(primary_source), 0, primary_source))
+    for idx, location in enumerate(record.get("locations") or [], start=1):
+        source = _source_from_location(location)
+        if source.get("display_name") or source.get("id"):
+            candidates.append((_source_priority(source), idx, source))
+    if not candidates:
+        return primary_source
+    return sorted(candidates, key=lambda item: item[:2])[0][2]
+
+
 def _country_name(country_code: str | None, institution: dict[str, Any] | None = None) -> str | None:
     if institution:
         geo = institution.get("geo") or {}
@@ -110,7 +136,7 @@ def normalize_openalex(records: list[dict[str, Any]], venue_quality_path: str | 
         ids = rec.get("ids") or {}
         title = rec.get("display_name") or rec.get("title")
         abstract = reconstruct_abstract(rec.get("abstract_inverted_index"))
-        source = _source_from_location(rec.get("primary_location"))
+        source = _best_source(rec)
         openalex_topics = rec.get("topics") or []
         topic_group, topic_method = classify_topic(title, abstract, openalex_topics)
         doi = normalize_doi(rec.get("doi") or ids.get("doi"))
